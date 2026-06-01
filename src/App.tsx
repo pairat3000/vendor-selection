@@ -10,6 +10,8 @@ import VendorNewPage from '@/features/vendors/VendorNewPage'
 import VendorDetailPage from '@/features/vendors/VendorDetailPage'
 import VendorEditPage from '@/features/vendors/VendorEditPage'
 import RequestsPage from '@/features/requests/RequestsPage'
+import RequestNewPage from '@/features/requests/RequestNewPage'
+import RequestDetailPage from '@/features/requests/RequestDetailPage'
 import ApprovalRulesPage from '@/features/approvals/ApprovalRulesPage'
 import FieldManagerPage from '@/features/vendors/FieldManagerPage'
 
@@ -35,6 +37,8 @@ export default function App() {
             <Route path="/vendors/:id" element={<VendorDetailPage />} />
             <Route path="/vendors/:id/edit" element={<VendorEditPage />} />
             <Route path="/requests" element={<RequestsPage />} />
+            <Route path="/requests/new" element={<RequestNewPage />} />
+            <Route path="/requests/:id" element={<RequestDetailPage />} />
 
             {/* Admin only */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
