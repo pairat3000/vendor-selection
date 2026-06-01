@@ -153,6 +153,19 @@ export type Database = {
         Args: Record<string, never>
         Returns: UserRole
       }
+      create_approval_records: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
+      process_approval: {
+        Args: {
+          p_approval_id: string
+          p_approver_id: string
+          p_status: ApprovalStatus
+          p_comment?: string | null
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: UserRole

@@ -5,6 +5,8 @@ import { useVendorStore } from '@/stores/vendorStore'
 import { REQUEST_TYPES } from './types'
 import type { RequestStatus } from '@/types/database'
 import type { RequestVendor } from './types'
+import { useApprovalStore } from '@/stores/approvalStore'
+import { useAuthStore } from '@/stores/authStore'
 
 const STATUS_CONFIG: Record<RequestStatus, { label: string; className: string }> = {
   draft:            { label: 'Draft',        className: 'bg-gray-100 text-gray-600' },
@@ -27,7 +29,18 @@ export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { requests, fetchRequests, fetchRequestVendors, getQuotationUrl } = useRequestStore()
   const { vendors, fetchVendors } = useVendorStore()
+  const { submitForApproval } = useApprovalStore()
+  const { user } = useAuthStore()
+  const [submitting, setSubmitting] = useState(false)
   const [requestVendors, setRequestVendors] = useState<RequestVendor[]>([])
+
+  const handleSubmitApproval = async () => {
+    if (!id) return
+    setSubmitting(true)
+    await submitForApproval(id)
+    await fetchRequests()
+    setSubmitting(false)
+  }
 
   useEffect(() => {
     if (requests.length === 0) void fetchRequests()
@@ -89,6 +102,12 @@ export default function RequestDetailPage() {
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
             📝 Scoring
           </Link>
+          {request.status === 'scoring' && request.owner_id === user?.id && (
+            <button onClick={() => void handleSubmitApproval()} disabled={submitting}
+              className="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 disabled:opacity-50">
+              {submitting ? '...' : '🚀 ส่งอนุมัติ'}
+            </button>
+          )}
         </div>
       </div>
 

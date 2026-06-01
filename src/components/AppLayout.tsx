@@ -13,7 +13,12 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/requests', label: 'Requests', icon: '📋' },
 ]
 
+const APPROVER_NAV_ITEMS: NavItem[] = [
+  { to: '/approvals', label: 'รออนุมัติ', icon: '✅' },
+]
+
 const ADMIN_NAV_ITEMS: NavItem[] = [
+  { to: '/approvals', label: 'รออนุมัติ', icon: '✅' },
   { to: '/admin/fields', label: 'Custom Fields', icon: '🔧' },
   { to: '/admin/approval-rules', label: 'Approval Rules', icon: '⚙️' },
 ]
@@ -29,6 +34,7 @@ export default function AppLayout() {
 
   const navItems = [
     ...NAV_ITEMS,
+    ...(profile?.role === 'approver' ? APPROVER_NAV_ITEMS : []),
     ...(profile?.role === 'admin' ? ADMIN_NAV_ITEMS : []),
   ]
 
