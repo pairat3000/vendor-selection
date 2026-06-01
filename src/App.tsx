@@ -12,6 +12,7 @@ import VendorEditPage from '@/features/vendors/VendorEditPage'
 import RequestsPage from '@/features/requests/RequestsPage'
 import RequestNewPage from '@/features/requests/RequestNewPage'
 import RequestDetailPage from '@/features/requests/RequestDetailPage'
+import RequestEditPage from '@/features/requests/RequestEditPage'
 import ScoringPage from '@/features/scoring/ScoringPage'
 import ApprovalRulesPage from '@/features/approvals/ApprovalRulesPage'
 import ApproverDashboardPage from '@/features/approvals/ApproverDashboardPage'
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/requests" element={<RequestsPage />} />
             <Route path="/requests/new" element={<RequestNewPage />} />
             <Route path="/requests/:id" element={<RequestDetailPage />} />
+            <Route path="/requests/:id/edit" element={<RequestEditPage />} />
             <Route path="/requests/:id/scoring" element={<ScoringPage />} />
 
             {/* Admin only */}

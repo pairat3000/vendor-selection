@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useRequestStore } from '@/stores/requestStore'
 import { useVendorStore } from '@/stores/vendorStore'
 import { REQUEST_TYPES } from './types'
@@ -27,11 +27,13 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { requests, fetchRequests, fetchRequestVendors, getQuotationUrl } = useRequestStore()
+  const navigate = useNavigate()
+  const { requests, fetchRequests, fetchRequestVendors, getQuotationUrl, updateRequest } = useRequestStore()
   const { vendors, fetchVendors } = useVendorStore()
   const { submitForApproval } = useApprovalStore()
   const { user } = useAuthStore()
   const [submitting, setSubmitting] = useState(false)
+  const [startingScoring, setStartingScoring] = useState(false)
   const [requestVendors, setRequestVendors] = useState<RequestVendor[]>([])
 
   const handleSubmitApproval = async () => {
@@ -40,6 +42,15 @@ export default function RequestDetailPage() {
     await submitForApproval(id)
     await fetchRequests()
     setSubmitting(false)
+  }
+
+  const handleStartScoring = async () => {
+    if (!id) return
+    setStartingScoring(true)
+    await updateRequest(id, { status: 'scoring' })
+    await fetchRequests()
+    setStartingScoring(false)
+    navigate(`/requests/${id}/scoring`)
   }
 
   useEffect(() => {
@@ -92,20 +103,49 @@ export default function RequestDetailPage() {
           <p className="mt-1 text-sm text-gray-500">{typeLabel}</p>
         </div>
         <div className="flex gap-2">
+          {/* Draft: แก้ไขได้ + เริ่ม Scoring */}
           {request.status === 'draft' && (
-            <Link to={`/requests/${request.id}/edit`}
+            <>
+              <Link to={`/requests/${request.id}/edit`}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                ✎ แก้ไข
+              </Link>
+              <button onClick={() => void handleStartScoring()} disabled={startingScoring}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                {startingScoring ? '...' : '▶ เริ่ม Scoring'}
+              </button>
+            </>
+          )}
+
+          {/* Scoring: ไปกรอกคะแนน + ส่งอนุมัติ */}
+          {request.status === 'scoring' && (
+            <>
+              <Link to={`/requests/${request.id}/scoring`}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                📝 Scoring
+              </Link>
+              {request.owner_id === user?.id && (
+                <button onClick={() => void handleSubmitApproval()} disabled={submitting}
+                  className="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 disabled:opacity-50">
+                  {submitting ? '...' : '🚀 ส่งอนุมัติ'}
+                </button>
+              )}
+            </>
+          )}
+
+          {/* pending_approval / approved / returned: ดูผล scoring ได้อย่างเดียว */}
+          {(request.status === 'pending_approval' || request.status === 'approved' || request.status === 'returned') && (
+            <Link to={`/requests/${request.id}/scoring`}
               className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              ✎ แก้ไข
+              📊 ดูผล Scoring
             </Link>
           )}
-          <Link to={`/requests/${request.id}/scoring`}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-            📝 Scoring
-          </Link>
-          {request.status === 'scoring' && request.owner_id === user?.id && (
+
+          {/* returned: แก้ไขแล้วส่งใหม่ได้ */}
+          {request.status === 'returned' && request.owner_id === user?.id && (
             <button onClick={() => void handleSubmitApproval()} disabled={submitting}
               className="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 disabled:opacity-50">
-              {submitting ? '...' : '🚀 ส่งอนุมัติ'}
+              {submitting ? '...' : '🚀 ส่งอนุมัติอีกครั้ง'}
             </button>
           )}
         </div>
