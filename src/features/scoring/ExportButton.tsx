@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { exportXLSX, exportPDF } from '@/lib/exportReport'
+import { exportXLSX } from '@/lib/exportReport'
+import { exportPDFWithHTML } from '@/lib/exportPdfHtml'
 import { supabase } from '@/lib/supabase'
 import type { ExportData } from '@/lib/exportReport'
 import type { ScoringCriteria, FinalScore } from './types'
@@ -70,7 +71,7 @@ export default function ExportButton({ requestId, requestTitle, criteria, vendor
     try {
       const data = await buildExportData()
       if (format === 'xlsx') exportXLSX(data)
-      else exportPDF(data)
+      else await exportPDFWithHTML(data)
     } finally {
       setLoading(false)
     }
