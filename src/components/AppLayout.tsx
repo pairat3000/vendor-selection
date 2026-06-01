@@ -14,6 +14,7 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 const ADMIN_NAV_ITEMS: NavItem[] = [
+  { to: '/admin/fields', label: 'Custom Fields', icon: '🔧' },
   { to: '/admin/approval-rules', label: 'Approval Rules', icon: '⚙️' },
 ]
 

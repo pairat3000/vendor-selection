@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useVendorStore } from '@/stores/vendorStore'
+import { useVendorFieldStore } from '@/stores/vendorFieldStore'
 import { useAuthStore } from '@/stores/authStore'
 import { VENDOR_TYPES, PAYMENT_TERMS, type Vendor } from './types'
+import DynamicFieldInput from './DynamicFieldInput'
 
 interface Props {
-  vendor?: Vendor // ถ้ามี = edit mode
+  vendor?: Vendor
 }
 
 interface FormData {
@@ -26,12 +28,15 @@ const EMPTY: FormData = {
 
 export default function VendorForm({ vendor }: Props) {
   const [form, setForm] = useState<FormData>(EMPTY)
+  const [dynValues, setDynValues] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { createVendor, updateVendor } = useVendorStore()
+  const { fields, fetchFields, fetchValues, saveValues } = useVendorFieldStore()
   const { user } = useAuthStore()
   const navigate = useNavigate()
 
+  useEffect(() => { void fetchFields() }, [fetchFields])
 
   useEffect(() => {
     if (vendor) {
@@ -45,49 +50,75 @@ export default function VendorForm({ vendor }: Props) {
         contact_email: vendor.contact_email ?? '',
         contact_phone: vendor.contact_phone ?? '',
       })
+      // Load existing dynamic field values
+      void fetchValues(vendor.id).then((vals) => {
+        const map: Record<string, string> = {}
+        vals.forEach((v) => { map[v.field_key] = v.value ?? '' })
+        setDynValues(map)
+      })
     }
-  }, [vendor])
+  }, [vendor, fetchValues])
 
-  const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const val = e.target.value
-    setForm((prev) => ({ ...prev, [field]: val }))
+  const setField = (field: keyof FormData) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      const val = e.target.value
+      setForm((prev) => ({ ...prev, [field]: val }))
+    }
+
+  const handleDynChange = (key: string, value: string) => {
+    setDynValues((prev) => ({ ...prev, [key]: value }))
+  }
+
+  // Validate required dynamic fields
+  const validateDynFields = (): boolean => {
+    for (const field of fields) {
+      if (field.is_required && field.field_type !== 'boolean') {
+        if (!dynValues[field.field_key]) return false
+      }
+    }
+    return true
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (!validateDynFields()) {
+      setError('กรุณากรอกข้อมูลใน custom fields ที่จำเป็นให้ครบ')
+      return
+    }
     setError(null)
     setSaving(true)
 
+    const baseData = {
+      name: form.name,
+      tax_id: form.tax_id || null,
+      type: form.type,
+      address: form.address || null,
+      payment_terms: form.payment_terms || null,
+      contact_name: form.contact_name || null,
+      contact_email: form.contact_email || null,
+      contact_phone: form.contact_phone || null,
+    }
+
     if (vendor) {
-      const { error: err } = await updateVendor(vendor.id, {
-        ...form,
-        tax_id: form.tax_id || null,
-        address: form.address || null,
-        payment_terms: form.payment_terms || null,
-        contact_name: form.contact_name || null,
-        contact_email: form.contact_email || null,
-        contact_phone: form.contact_phone || null,
-      })
-      setSaving(false)
-      if (err) { setError(err); return }
+      const { error: err } = await updateVendor(vendor.id, baseData)
+      if (err) { setError(err); setSaving(false); return }
+      const { error: dynErr } = await saveValues(vendor.id, dynValues)
+      if (dynErr) { setError(dynErr); setSaving(false); return }
       navigate(`/vendors/${vendor.id}`)
     } else {
       const { error: err, id } = await createVendor({
-        ...form,
-        tax_id: form.tax_id || null,
-        address: form.address || null,
-        payment_terms: form.payment_terms || null,
-        contact_name: form.contact_name || null,
-        contact_email: form.contact_email || null,
-        contact_phone: form.contact_phone || null,
+        ...baseData,
         status: 'pending',
-        created_by: user?.id,
+        created_by: user?.id ?? null,
         is_active: true,
       })
-      setSaving(false)
-      if (err) { setError(err); return }
+      if (err) { setError(err); setSaving(false); return }
+      if (id && Object.keys(dynValues).length > 0) {
+        await saveValues(id, dynValues)
+      }
       navigate(`/vendors/${id ?? ''}`)
     }
+    setSaving(false)
   }
 
   return (
@@ -106,17 +137,17 @@ export default function VendorForm({ vendor }: Props) {
             <label className="mb-1 block text-sm font-medium text-gray-700">
               ชื่อบริษัท <span className="text-red-500">*</span>
             </label>
-            <input required value={form.name} onChange={set('name')}
+            <input required value={form.name} onChange={setField('name')}
               className="input w-full" placeholder="บริษัท xxxxxxxx จำกัด" />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">เลขนิติบุคคล / เลขประจำตัวผู้เสียภาษี</label>
-            <input value={form.tax_id} onChange={set('tax_id')}
+            <label className="mb-1 block text-sm font-medium text-gray-700">เลขนิติบุคคล</label>
+            <input value={form.tax_id} onChange={setField('tax_id')}
               className="input w-full" placeholder="0000000000000" maxLength={13} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">ประเภทผู้ประกอบการ</label>
-            <select value={form.type} onChange={set('type')} className="input w-full">
+            <select value={form.type} onChange={setField('type')} className="input w-full">
               {VENDOR_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
@@ -124,12 +155,12 @@ export default function VendorForm({ vendor }: Props) {
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700">ที่อยู่</label>
-            <textarea value={form.address} onChange={set('address')} rows={2}
+            <textarea value={form.address} onChange={setField('address')} rows={2}
               className="input w-full resize-none" placeholder="ที่อยู่บริษัท" />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">เงื่อนไขการชำระเงิน</label>
-            <select value={form.payment_terms} onChange={set('payment_terms')} className="input w-full">
+            <select value={form.payment_terms} onChange={setField('payment_terms')} className="input w-full">
               {PAYMENT_TERMS.map((t) => (
                 <option key={t} value={t}>{t}</option>
               ))}
@@ -144,21 +175,47 @@ export default function VendorForm({ vendor }: Props) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">ชื่อผู้ติดต่อ</label>
-            <input value={form.contact_name} onChange={set('contact_name')}
+            <input value={form.contact_name} onChange={setField('contact_name')}
               className="input w-full" placeholder="ชื่อ-นามสกุล" />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label>
-            <input value={form.contact_phone} onChange={set('contact_phone')}
-              className="input w-full" placeholder="02-xxx-xxxx หรือ 08x-xxx-xxxx" />
+            <input value={form.contact_phone} onChange={setField('contact_phone')}
+              className="input w-full" placeholder="02-xxx-xxxx" />
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-sm font-medium text-gray-700">อีเมล</label>
-            <input type="email" value={form.contact_email} onChange={set('contact_email')}
+            <input type="email" value={form.contact_email} onChange={setField('contact_email')}
               className="input w-full" placeholder="contact@company.co.th" />
           </div>
         </div>
       </div>
+
+      {/* Dynamic Fields */}
+      {fields.length > 0 && (
+        <div className="rounded-xl border border-gray-200 bg-white p-6">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+            ข้อมูลเพิ่มเติม
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {fields.map((field) => (
+              <div key={field.id} className={field.field_type === 'boolean' ? 'flex items-center' : ''}>
+                {field.field_type !== 'boolean' && (
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    {field.field_label}
+                    {field.is_required && <span className="ml-1 text-red-500">*</span>}
+                  </label>
+                )}
+                <DynamicFieldInput
+                  field={field}
+                  value={dynValues[field.field_key] ?? ''}
+                  onChange={handleDynChange}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex gap-3">
