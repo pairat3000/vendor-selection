@@ -4,12 +4,13 @@ import type { Step1Data } from './RequestNewPage'
 
 interface Props {
   initialData: Step1Data
-  onNext: (data: Step1Data) => void
+  onNext: (data: Step1Data) => Promise<void>
 }
 
 export default function RequestStep1({ initialData, onNext }: Props) {
   const [form, setForm] = useState<Step1Data>(initialData)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const set = (field: keyof Step1Data) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -17,15 +18,21 @@ export default function RequestStep1({ initialData, onNext }: Props) {
       setForm((p) => ({ ...p, [field]: val }))
     }
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    setError(null)
     setSaving(true)
-    onNext(form)
-    setSaving(false)
+    try {
+      await onNext(form)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด กรุณาลองใหม่')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">ข้อมูลโปรเจกต์</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -62,6 +69,12 @@ export default function RequestStep1({ initialData, onNext }: Props) {
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
 
       <div className="flex justify-end">
         <button type="submit" disabled={saving}

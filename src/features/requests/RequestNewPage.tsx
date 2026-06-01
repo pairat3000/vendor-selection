@@ -27,7 +27,6 @@ export default function RequestNewPage() {
 
   const handleStep1Next = async (data: Step1Data) => {
     setStep1(data)
-    // Save as draft immediately
     const { error, id } = await createRequest({
       title: data.title,
       budget: parseFloat(data.budget) || 0,
@@ -38,7 +37,8 @@ export default function RequestNewPage() {
       owner_id: user?.id ?? '',
       is_active: true,
     })
-    if (error || !id) return
+    if (error) throw new Error(error)
+    if (!id) throw new Error('ไม่ได้รับ ID จากระบบ กรุณาลองใหม่')
     setRequestId(id)
     setStep(1)
   }
@@ -76,7 +76,7 @@ export default function RequestNewPage() {
 
       <div className="max-w-2xl">
         {step === 0 && (
-          <RequestStep1 initialData={step1} onNext={(d) => void handleStep1Next(d)} />
+          <RequestStep1 initialData={step1} onNext={handleStep1Next} />
         )}
         {step === 1 && requestId && (
           <RequestStep2 requestId={requestId} onDone={handleDone} />
