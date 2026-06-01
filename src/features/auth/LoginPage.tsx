@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -7,8 +7,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { signIn, profile } = useAuthStore()
+  const { signIn, profile, user } = useAuthStore()
   const navigate = useNavigate()
+
+  // Redirect after profile loads post-login
+  useEffect(() => {
+    if (user && profile) {
+      if (profile.role === 'admin') {
+        navigate('/admin/approval-rules', { replace: true })
+      } else {
+        navigate('/dashboard', { replace: true })
+      }
+    }
+  }, [user, profile, navigate])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -20,16 +31,8 @@ export default function LoginPage() {
 
     if (signInError) {
       setError(signInError)
-      return
     }
-
-    // role-based redirect
-    const role = profile?.role
-    if (role === 'admin') {
-      navigate('/admin/approval-rules', { replace: true })
-    } else {
-      navigate('/dashboard', { replace: true })
-    }
+    // navigation handled by useEffect above once profile loads
   }
 
   return (

@@ -27,20 +27,26 @@ export const useAuthStore = create<AuthState>((set) => ({
   loading: true,
 
   initialize: async () => {
-    // Get existing session
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      const profile = await fetchProfile(session.user.id)
-      set({ session, user: session.user, profile, loading: false })
-    } else {
+    try {
+      // Get existing session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const profile = await fetchProfile(session.user.id)
+        set({ session, user: session.user, profile, loading: false })
+      } else {
+        set({ loading: false })
+      }
+    } catch {
+      // Network error or Supabase unavailable — still clear loading so UI can show login
       set({ loading: false })
     }
 
     // Listen for auth changes
-    supabase.auth.onAuthStateChange(async (_event, session) => {
+    supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const profile = await fetchProfile(session.user.id)
-        set({ session, user: session.user, profile })
+        void fetchProfile(session.user.id).then((profile) => {
+          set({ session, user: session.user, profile })
+        })
       } else {
         set({ session: null, user: null, profile: null })
       }
