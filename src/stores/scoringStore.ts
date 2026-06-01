@@ -107,9 +107,11 @@ export const useScoringStore = create<ScoringState>((set, get) => ({
   },
 
   addScorer: async (requestId, userId, reason, changedBy) => {
-    const { error } = await supabase.from('scorers').insert({
-      request_id: requestId, user_id: userId, is_active: true,
-    })
+    // Upsert: restore if soft-deleted, create if new
+    const { error } = await supabase.from('scorers').upsert(
+      { request_id: requestId, user_id: userId, is_active: true, submitted_at: null },
+      { onConflict: 'request_id,user_id' },
+    )
     if (error) return { error: error.message }
     await logScorerChange({ request_id: requestId, action: 'added', target_user_id: userId, reason, changed_by: changedBy })
     await get().fetchScorers(requestId)
