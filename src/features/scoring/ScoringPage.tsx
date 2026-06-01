@@ -8,6 +8,7 @@ import CriteriaEditor from './CriteriaEditor'
 import ScoringMatrix from './ScoringMatrix'
 import ScorerManager from './ScorerManager'
 import ResultsPanel from './ResultsPanel'
+import ExportButton from './ExportButton'
 import type { RequestVendor } from '@/features/requests/types'
 
 type Tab = 'score' | 'scorers' | 'results'
@@ -146,12 +147,26 @@ export default function ScoringPage() {
 
       {/* Tab: Results */}
       {tab === 'results' && (
-        <ResultsPanel
-          isUnlocked={isUnlocked}
-          finalScores={finalScores}
-          scorers={scorers}
-          loading={loading}
-        />
+        <div className="space-y-4">
+          {isUnlocked && (
+            <div className="flex justify-end">
+              <ExportButton
+                requestId={requestId}
+                requestTitle={request?.title ?? requestId}
+                criteria={criteria}
+                vendors={requestVendors.map((rv) => ({ id: rv.vendor_id, name: rv.vendor_name }))}
+                finalScores={finalScores}
+                isUnlocked={isUnlocked}
+              />
+            </div>
+          )}
+          <ResultsPanel
+            isUnlocked={isUnlocked}
+            finalScores={finalScores}
+            scorers={scorers}
+            loading={loading}
+          />
+        </div>
       )}
     </div>
   )
