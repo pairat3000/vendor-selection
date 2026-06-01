@@ -5,9 +5,10 @@ interface Props {
   finalScores: FinalScore[]
   scorers: ScorerWithProfile[]
   loading: boolean
+  vendorNames?: Record<string, string> // vendor_id → vendor_name
 }
 
-export default function ResultsPanel({ isUnlocked, finalScores, scorers, loading }: Props) {
+export default function ResultsPanel({ isUnlocked, finalScores, scorers, loading, vendorNames = {} }: Props) {
   const active = scorers.filter((s) => s.is_active)
   const submitted = active.filter((s) => s.submitted_at)
 
@@ -61,7 +62,9 @@ export default function ResultsPanel({ isUnlocked, finalScores, scorers, loading
                   {i + 1}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{fs.vendor_name}</p>
+                  <p className="font-semibold text-gray-900">
+                    {vendorNames[fs.vendor_id] ?? fs.vendor_id}
+                  </p>
                   <p className="text-xs text-gray-400">{fs.scorer_count} scorers</p>
                 </div>
                 <div className="text-right">

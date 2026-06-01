@@ -165,6 +165,7 @@ export default function ScoringPage() {
             finalScores={finalScores}
             scorers={scorers}
             loading={loading}
+            vendorNames={vendorNames}
           />
         </div>
       )}
