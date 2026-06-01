@@ -1,20 +1,43 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useAuthStore } from '@/stores/authStore'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import AppLayout from '@/components/AppLayout'
+import LoginPage from '@/features/auth/LoginPage'
+import DashboardPage from '@/features/dashboard/DashboardPage'
+import VendorsPage from '@/features/vendors/VendorsPage'
+import RequestsPage from '@/features/requests/RequestsPage'
+import ApprovalRulesPage from '@/features/approvals/ApprovalRulesPage'
 
 export default function App() {
+  const initialize = useAuthStore((s) => s.initialize)
+
+  useEffect(() => {
+    void initialize()
+  }, [initialize])
+
   return (
     <BrowserRouter basename="/vendor-selection">
       <Routes>
-        <Route
-          path="/"
-          element={
-            <div className="flex min-h-screen items-center justify-center bg-gray-50">
-              <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900">Vendor Selection</h1>
-                <p className="mt-2 text-gray-500">DoHome IT — ระบบคัดเลือก Vendor</p>
-              </div>
-            </div>
-          }
-        />
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Protected — all authenticated users */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/vendors" element={<VendorsPage />} />
+            <Route path="/requests" element={<RequestsPage />} />
+
+            {/* Admin only */}
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin/approval-rules" element={<ApprovalRulesPage />} />
+            </Route>
+          </Route>
+        </Route>
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   )
