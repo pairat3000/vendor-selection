@@ -6,6 +6,9 @@ import AppLayout from '@/components/AppLayout'
 import LoginPage from '@/features/auth/LoginPage'
 import DashboardPage from '@/features/dashboard/DashboardPage'
 import VendorsPage from '@/features/vendors/VendorsPage'
+import VendorNewPage from '@/features/vendors/VendorNewPage'
+import VendorDetailPage from '@/features/vendors/VendorDetailPage'
+import VendorEditPage from '@/features/vendors/VendorEditPage'
 import RequestsPage from '@/features/requests/RequestsPage'
 import ApprovalRulesPage from '@/features/approvals/ApprovalRulesPage'
 
@@ -27,6 +30,9 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/vendors" element={<VendorsPage />} />
+            <Route path="/vendors/new" element={<VendorNewPage />} />
+            <Route path="/vendors/:id" element={<VendorDetailPage />} />
+            <Route path="/vendors/:id/edit" element={<VendorEditPage />} />
             <Route path="/requests" element={<RequestsPage />} />
 
             {/* Admin only */}
