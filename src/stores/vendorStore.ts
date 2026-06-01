@@ -35,7 +35,7 @@ export const useVendorStore = create<VendorState>((set, get) => ({
   createVendor: async (data) => {
     const res = await supabase.from('vendors').insert(data).select().single()
     if (res.error) return { error: res.error.message }
-    const created = res.data as Vendor
+    const created = res.data
     set((s) => ({ vendors: [created, ...s.vendors] }))
     return { error: null, id: created.id }
   },
@@ -43,7 +43,7 @@ export const useVendorStore = create<VendorState>((set, get) => ({
   updateVendor: async (id, data) => {
     const res = await supabase.from('vendors').update(data).eq('id', id).select().single()
     if (res.error) return { error: res.error.message }
-    const updated = res.data as Vendor
+    const updated = res.data
     set((s) => ({
       vendors: s.vendors.map((v) => (v.id === id ? updated : v)),
     }))
