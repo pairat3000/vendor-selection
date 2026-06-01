@@ -17,24 +17,30 @@ export default function ExportButton({ requestId, requestTitle, criteria, vendor
   const [loading, setLoading] = useState(false)
 
   const buildExportData = async (): Promise<ExportData> => {
-    // Fetch all scores for this request
-    const { data: scoresData } = await supabase
-      .from('scores')
-      .select('*')
-      .eq('request_id', requestId)
-
-    // Fetch scorers
+    // Fetch ONLY active + submitted scorers (เฉพาะคนที่ส่งคะแนนจริงๆ)
     const { data: scorerData } = await supabase
       .from('scorers')
       .select('id, user_id, is_active, submitted_at')
       .eq('request_id', requestId)
       .eq('is_active', true)
+      .not('submitted_at', 'is', null)
 
-    const scorerIds = (scorerData ?? []).map((s) => s.user_id)
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', scorerIds)
+    const activeScorerIds = (scorerData ?? []).map((s) => s.id)
+
+    // Fetch scores เฉพาะของ active+submitted scorers เท่านั้น
+    const { data: scoresData } = activeScorerIds.length > 0
+      ? await supabase
+          .from('scores')
+          .select('*')
+          .eq('request_id', requestId)
+          .in('scorer_id', activeScorerIds)
+      : { data: [] }
+
+    // Profiles
+    const userIds = (scorerData ?? []).map((s) => s.user_id)
+    const { data: profileData } = userIds.length > 0
+      ? await supabase.from('profiles').select('id, full_name').in('id', userIds)
+      : { data: [] }
     const profileMap = Object.fromEntries((profileData ?? []).map((p) => [p.id, p.full_name]))
     const scorerNames: Record<string, string> = Object.fromEntries(
       (scorerData ?? []).map((s) => [s.id, profileMap[s.user_id] ?? s.user_id]),
