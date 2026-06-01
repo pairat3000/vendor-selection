@@ -78,12 +78,18 @@ export default function RequestDetailPage() {
           </div>
           <p className="mt-1 text-sm text-gray-500">{typeLabel}</p>
         </div>
-        {request.status === 'draft' && (
-          <Link to={`/requests/${request.id}/edit`}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            ✎ แก้ไข
+        <div className="flex gap-2">
+          {request.status === 'draft' && (
+            <Link to={`/requests/${request.id}/edit`}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              ✎ แก้ไข
+            </Link>
+          )}
+          <Link to={`/requests/${request.id}/scoring`}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+            📝 Scoring
           </Link>
-        )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

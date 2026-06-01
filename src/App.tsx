@@ -12,6 +12,7 @@ import VendorEditPage from '@/features/vendors/VendorEditPage'
 import RequestsPage from '@/features/requests/RequestsPage'
 import RequestNewPage from '@/features/requests/RequestNewPage'
 import RequestDetailPage from '@/features/requests/RequestDetailPage'
+import ScoringPage from '@/features/scoring/ScoringPage'
 import ApprovalRulesPage from '@/features/approvals/ApprovalRulesPage'
 import FieldManagerPage from '@/features/vendors/FieldManagerPage'
 
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/requests" element={<RequestsPage />} />
             <Route path="/requests/new" element={<RequestNewPage />} />
             <Route path="/requests/:id" element={<RequestDetailPage />} />
+            <Route path="/requests/:id/scoring" element={<ScoringPage />} />
 
             {/* Admin only */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
