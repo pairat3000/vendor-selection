@@ -6,6 +6,12 @@ type ApprovalRule = Database['public']['Tables']['approval_rules']['Row']
 type ApprovalRuleInsert = Database['public']['Tables']['approval_rules']['Insert']
 export type Approval = Database['public']['Tables']['approvals']['Row']
 
+export interface ApproverOption {
+  id: string
+  full_name: string
+  role: string
+}
+
 export interface ApprovalWithRequest extends Approval {
   request_title?: string
   request_budget?: number
@@ -13,11 +19,13 @@ export interface ApprovalWithRequest extends Approval {
 
 interface ApprovalState {
   rules: ApprovalRule[]
+  approvers: ApproverOption[]
   approvals: Approval[]
   myPendingApprovals: ApprovalWithRequest[]
   loading: boolean
   // rules
   fetchRules: () => Promise<void>
+  fetchApprovers: () => Promise<void>
   saveRule: (data: ApprovalRuleInsert) => Promise<{ error: string | null }>
   deleteRule: (id: string) => Promise<void>
   // workflow
@@ -29,6 +37,7 @@ interface ApprovalState {
 
 export const useApprovalStore = create<ApprovalState>((set) => ({
   rules: [],
+  approvers: [],
   approvals: [],
   myPendingApprovals: [],
   loading: false,
@@ -40,6 +49,16 @@ export const useApprovalStore = create<ApprovalState>((set) => ({
       .order('level')
       .order('min_budget')
     set({ rules: data ?? [] })
+  },
+
+  fetchApprovers: async () => {
+    // Users who can be assigned as approvers (approver or admin role)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('role', ['approver', 'admin'])
+      .order('full_name')
+    set({ approvers: data ?? [] })
   },
 
   saveRule: async (data) => {

@@ -118,9 +118,9 @@ export type Database = {
         Relationships: []
       }
       approval_rules: {
-        Row: { id: string; min_budget: number; max_budget: number | null; approver_role: string; level: number; created_at: string }
-        Insert: { id?: string; min_budget: number; max_budget?: number | null; approver_role: string; level: number }
-        Update: { min_budget?: number; max_budget?: number | null; approver_role?: string; level?: number }
+        Row: { id: string; min_budget: number; max_budget: number | null; approver_role: string | null; approver_id: string | null; level: number; created_at: string }
+        Insert: { id?: string; min_budget: number; max_budget?: number | null; approver_role?: string | null; approver_id?: string | null; level: number }
+        Update: { min_budget?: number; max_budget?: number | null; approver_role?: string | null; approver_id?: string | null; level?: number }
         Relationships: []
       }
       approvals: {
