@@ -15,6 +15,7 @@ import RequestDetailPage from '@/features/requests/RequestDetailPage'
 import RequestEditPage from '@/features/requests/RequestEditPage'
 import ScoringPage from '@/features/scoring/ScoringPage'
 import ApprovalRulesPage from '@/features/approvals/ApprovalRulesPage'
+import ApprovalOverviewPage from '@/features/approvals/ApprovalOverviewPage'
 import ApproverDashboardPage from '@/features/approvals/ApproverDashboardPage'
 import ApprovalDetailPage from '@/features/approvals/ApprovalDetailPage'
 import FieldManagerPage from '@/features/vendors/FieldManagerPage'
@@ -49,6 +50,7 @@ export default function App() {
             {/* Admin only */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin/approval-rules" element={<ApprovalRulesPage />} />
+              <Route path="/admin/approvals" element={<ApprovalOverviewPage />} />
               <Route path="/admin/fields" element={<FieldManagerPage />} />
             </Route>
             {/* Approver + Admin */}

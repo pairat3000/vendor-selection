@@ -15,6 +15,15 @@ export interface ApproverOption {
 export interface ApprovalWithRequest extends Approval {
   request_title?: string
   request_budget?: number
+  approver_name?: string
+}
+
+export interface RequestApprovalGroup {
+  requestId: string
+  title: string
+  budget: number
+  status: string
+  approvals: ApprovalWithRequest[]
 }
 
 interface ApprovalState {
@@ -22,6 +31,7 @@ interface ApprovalState {
   approvers: ApproverOption[]
   approvals: Approval[]
   myPendingApprovals: ApprovalWithRequest[]
+  allApprovalGroups: RequestApprovalGroup[]
   loading: boolean
   // rules
   fetchRules: () => Promise<void>
@@ -32,6 +42,7 @@ interface ApprovalState {
   submitForApproval: (requestId: string) => Promise<{ error: string | null }>
   fetchApprovals: (requestId: string) => Promise<Approval[]>
   fetchMyPendingApprovals: () => Promise<void>
+  fetchAllApprovals: () => Promise<void>
   processApproval: (approvalId: string, approverId: string, status: 'approved' | 'returned', comment?: string) => Promise<{ error: string | null }>
 }
 
@@ -40,6 +51,7 @@ export const useApprovalStore = create<ApprovalState>((set) => ({
   approvers: [],
   approvals: [],
   myPendingApprovals: [],
+  allApprovalGroups: [],
   loading: false,
 
   fetchRules: async () => {
@@ -111,6 +123,52 @@ export const useApprovalStore = create<ApprovalState>((set) => ({
       request_budget: (reqMap[a.request_id] as { title: string; budget: number } | undefined)?.budget,
     }))
     set({ myPendingApprovals: mapped, loading: false })
+  },
+
+  fetchAllApprovals: async () => {
+    set({ loading: true })
+    // Admin RLS allows reading all approvals
+    const { data: approvalsData } = await supabase
+      .from('approvals')
+      .select('*')
+      .order('level')
+    if (!approvalsData) { set({ loading: false }); return }
+
+    const requestIds = [...new Set(approvalsData.map((a) => a.request_id))]
+    const approverIds = [...new Set(approvalsData.map((a) => a.approver_id).filter((x): x is string => x !== null))]
+
+    const [{ data: requestsData }, { data: profileData }] = await Promise.all([
+      requestIds.length > 0
+        ? supabase.from('selection_requests').select('id, title, budget, status').in('id', requestIds)
+        : Promise.resolve({ data: [] as { id: string; title: string; budget: number; status: string }[] }),
+      approverIds.length > 0
+        ? supabase.from('profiles').select('id, full_name').in('id', approverIds)
+        : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
+    ])
+
+    const reqMap = Object.fromEntries((requestsData ?? []).map((r) => [r.id, r]))
+    const nameMap = Object.fromEntries((profileData ?? []).map((p) => [p.id, p.full_name]))
+
+    // Group by request
+    const groupMap = new Map<string, RequestApprovalGroup>()
+    for (const a of approvalsData) {
+      const req = reqMap[a.request_id] as { title: string; budget: number; status: string } | undefined
+      if (!groupMap.has(a.request_id)) {
+        groupMap.set(a.request_id, {
+          requestId: a.request_id,
+          title: req?.title ?? a.request_id,
+          budget: req?.budget ?? 0,
+          status: req?.status ?? 'unknown',
+          approvals: [],
+        })
+      }
+      groupMap.get(a.request_id)?.approvals.push({
+        ...a,
+        approver_name: a.approver_id ? (nameMap[a.approver_id] ?? '(ไม่ทราบ)') : '— ยังไม่กำหนด —',
+      })
+    }
+
+    set({ allApprovalGroups: Array.from(groupMap.values()), loading: false })
   },
 
   processApproval: async (approvalId, approverId, status, comment) => {
