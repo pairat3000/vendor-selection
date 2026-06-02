@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useScoringStore } from '@/stores/scoringStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
 import type { ScorerWithProfile, FinalScore } from './types'
 
 interface Props {
@@ -13,8 +14,15 @@ interface Props {
 export default function ScorerManager({ requestId, scorers, requestVendorIds, vendorNames }: Props) {
   const { addScorer, removeScorer, restoreScorer, previewRemoval } = useScoringStore()
   const { user } = useAuthStore()
+  const { users, fetchUsers } = useUserStore()
   const [newUserId, setNewUserId] = useState('')
   const [addReason, setAddReason] = useState('')
+
+  useEffect(() => { void fetchUsers() }, [fetchUsers])
+
+  // user ที่ active และยังไม่ได้เป็น scorer (active) อยู่แล้ว
+  const activeScorerUserIds = new Set(scorers.filter((s) => s.is_active).map((s) => s.user_id))
+  const availableUsers = users.filter((u) => u.is_active && !activeScorerUserIds.has(u.id))
   const [removeModal, setRemoveModal] = useState<ScorerWithProfile | null>(null)
   const [removeReason, setRemoveReason] = useState('')
   const [preview, setPreview] = useState<FinalScore[] | null>(null)
@@ -22,9 +30,9 @@ export default function ScorerManager({ requestId, scorers, requestVendorIds, ve
   const [error, setError] = useState<string | null>(null)
 
   const handleAdd = async () => {
-    if (!newUserId.trim() || !addReason.trim()) { setError('กรุณากรอก User ID และเหตุผล'); return }
+    if (!newUserId || !addReason.trim()) { setError('กรุณาเลือกผู้ใช้และกรอกเหตุผล'); return }
     setSaving(true); setError(null)
-    const { error: err } = await addScorer(requestId, newUserId.trim(), addReason.trim(), user?.id ?? '')
+    const { error: err } = await addScorer(requestId, newUserId, addReason.trim(), user?.id ?? '')
     setSaving(false)
     if (err) { setError(err); return }
     setNewUserId(''); setAddReason('')
@@ -93,14 +101,24 @@ export default function ScorerManager({ requestId, scorers, requestVendorIds, ve
       {/* Add scorer */}
       {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
       <div className="space-y-2">
-        <input value={newUserId} onChange={(e) => { setNewUserId(e.target.value) }}
-          className="input w-full text-sm" placeholder="User ID (UUID ของ user ที่ต้องการเพิ่ม)" />
+        <select value={newUserId} onChange={(e) => { setNewUserId(e.target.value) }}
+          className="input w-full text-sm">
+          <option value="">— เลือกผู้ใช้ —</option>
+          {availableUsers.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.full_name || u.email} ({u.role})
+            </option>
+          ))}
+        </select>
         <input value={addReason} onChange={(e) => { setAddReason(e.target.value) }}
           className="input w-full text-sm" placeholder="เหตุผลในการเพิ่ม scorer *" />
-        <button onClick={() => void handleAdd()} disabled={saving}
+        <button onClick={() => void handleAdd()} disabled={saving || !newUserId}
           className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
           + เพิ่ม Scorer
         </button>
+        {availableUsers.length === 0 && (
+          <p className="text-xs text-gray-400">ผู้ใช้ทุกคนถูกเพิ่มเป็น scorer แล้ว หรือยังไม่มีผู้ใช้อื่นในระบบ</p>
+        )}
       </div>
 
       {/* Remove Modal */}
