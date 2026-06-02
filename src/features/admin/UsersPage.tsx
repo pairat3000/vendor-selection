@@ -17,6 +17,29 @@ const ROLE_BADGE: Record<UserRole, string> = {
   approver: 'bg-green-100 text-green-700',
 }
 
+const ROLE_INFO: Record<UserRole, { label: string; dot: string; desc: string }> = {
+  admin: {
+    label: 'Admin',
+    dot: 'bg-purple-500',
+    desc: 'สิทธิ์สูงสุด — จัดการผู้ใช้, vendor, custom fields, ตั้ง approval rules, ดูภาพรวมทั้งหมด และอนุมัติได้ทุกชั้น',
+  },
+  it_user: {
+    label: 'IT User',
+    dot: 'bg-blue-500',
+    desc: 'สร้าง Selection Request, เพิ่ม vendor, แนบ quotation, กำหนดเกณฑ์และ scorer, ส่งเข้าอนุมัติ (กรอกคะแนนได้ถ้าถูกตั้งเป็น scorer)',
+  },
+  scorer: {
+    label: 'Scorer',
+    dot: 'bg-amber-500',
+    desc: 'กรอกคะแนน vendor แบบ blind ของตัวเอง — เห็นเฉพาะ request ที่ถูกมอบหมาย ไม่เห็นคะแนนคนอื่นจนกว่าทุกคนจะส่งครบ',
+  },
+  approver: {
+    label: 'Approver',
+    dot: 'bg-green-500',
+    desc: 'อนุมัติ/ส่งกลับ request เฉพาะชั้นที่ถูก assign ใน Approval Rules — เห็นเฉพาะรายการที่ถึงคิวตัวเอง',
+  },
+}
+
 export default function UsersPage() {
   const { users, loading, fetchUsers, createUser, updateRole, toggleActive, resetPassword, deleteUser } = useUserStore()
   const { user: currentUser } = useAuthStore()
@@ -119,8 +142,29 @@ export default function UsersPage() {
                 className="input w-full text-sm">
                 {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
+              {/* คำอธิบาย role ที่กำลังเลือก */}
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${ROLE_INFO[role].dot}`} />
+                <p className="text-xs leading-relaxed text-gray-600">{ROLE_INFO[role].desc}</p>
+              </div>
             </div>
           </div>
+
+          {/* ตารางสรุปสิทธิ์ทุก role */}
+          <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
+            <p className="mb-2 text-xs font-semibold text-gray-500">สิทธิ์แต่ละ Role</p>
+            <div className="space-y-2">
+              {ROLES.map((r) => (
+                <div key={r.value} className="flex items-start gap-2">
+                  <span className={`mt-1 inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${ROLE_BADGE[r.value]}`}>
+                    {ROLE_INFO[r.value].label}
+                  </span>
+                  <p className="text-xs leading-relaxed text-gray-600">{ROLE_INFO[r.value].desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="mt-4 flex gap-2">
             <button onClick={() => { setShowForm(false); setError(null) }}
               className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">ยกเลิก</button>
