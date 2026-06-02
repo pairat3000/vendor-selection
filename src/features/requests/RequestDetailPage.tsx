@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useRequestStore } from '@/stores/requestStore'
 import { useVendorStore } from '@/stores/vendorStore'
@@ -7,6 +7,8 @@ import type { RequestStatus } from '@/types/database'
 import type { RequestVendor } from './types'
 import { useApprovalStore } from '@/stores/approvalStore'
 import { useAuthStore } from '@/stores/authStore'
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
 const STATUS_CONFIG: Record<RequestStatus, { label: string; className: string }> = {
   draft:            { label: 'Draft',        className: 'bg-gray-100 text-gray-600' },
@@ -28,13 +30,42 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
 export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { requests, fetchRequests, fetchRequestVendors, getQuotationUrl, updateRequest } = useRequestStore()
+  const { requests, fetchRequests, fetchRequestVendors, getQuotationUrl, updateRequest,
+    updateRequestVendor, uploadQuotation, deleteQuotation } = useRequestStore()
   const { vendors, fetchVendors } = useVendorStore()
   const { submitForApproval } = useApprovalStore()
-  const { user } = useAuthStore()
+  const { user, profile } = useAuthStore()
   const [submitting, setSubmitting] = useState(false)
   const [startingScoring, setStartingScoring] = useState(false)
   const [requestVendors, setRequestVendors] = useState<RequestVendor[]>([])
+  const [fileError, setFileError] = useState<string | null>(null)
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  const reloadVendors = async () => {
+    if (id) setRequestVendors(await fetchRequestVendors(id))
+  }
+
+  const handlePriceBlur = async (rvId: string, raw: string) => {
+    const price = raw === '' ? null : parseFloat(raw)
+    await updateRequestVendor(rvId, { quotation_price: price })
+    await reloadVendors()
+  }
+
+  const handleUpload = async (rvId: string, file: File) => {
+    if (!id) return
+    if (file.size > MAX_FILE_SIZE) { setFileError('ไฟล์ใหญ่เกิน 10 MB'); return }
+    setFileError(null)
+    const { error, url } = await uploadQuotation(id, rvId, file)
+    if (error) { setFileError(error); return }
+    await updateRequestVendor(rvId, { quotation_url: url })
+    await reloadVendors()
+  }
+
+  const handleDeleteFile = async (rv: RequestVendor) => {
+    if (rv.quotation_url) await deleteQuotation(rv.quotation_url)
+    await updateRequestVendor(rv.id, { quotation_url: null })
+    await reloadVendors()
+  }
 
   const handleSubmitApproval = async () => {
     if (!id) return
@@ -73,6 +104,8 @@ export default function RequestDetailPage() {
 
   const cfg = STATUS_CONFIG[request.status]
   const typeLabel = REQUEST_TYPES.find((t) => t.value === request.type)?.label ?? request.type
+  // owner หรือ admin แก้ราคา/quotation ได้ ตราบใดที่ยังไม่อนุมัติจบ
+  const canEditVendors = (request.owner_id === user?.id || profile?.role === 'admin') && request.status !== 'approved'
   const fmt = (n: number) =>
     new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(n)
 
@@ -167,6 +200,7 @@ export default function RequestDetailPage() {
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
             Vendors ที่เข้าร่วม ({requestVendors.length})
           </h2>
+          {fileError && <p className="mb-2 text-xs text-red-600">{fileError}</p>}
           {requestVendors.length === 0 ? (
             <p className="text-sm text-gray-400">ยังไม่มี vendor</p>
           ) : (
@@ -175,24 +209,60 @@ export default function RequestDetailPage() {
                 const vendor = vendors.find((v) => v.id === rv.vendor_id)
                 return (
                   <li key={rv.id} className="rounded-lg border border-gray-100 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-gray-900">
                         {vendor?.name ?? rv.vendor_id}
                       </span>
-                      {rv.quotation_price != null && (
-                        <span className="text-sm text-gray-500">
-                          {fmt(rv.quotation_price)}
-                        </span>
+                      {canEditVendors ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-400">฿</span>
+                          <input
+                            type="number" min="0"
+                            defaultValue={rv.quotation_price ?? ''}
+                            onBlur={(e) => void handlePriceBlur(rv.id, e.target.value)}
+                            className="input w-32 text-right text-sm"
+                            placeholder="ราคาเสนอ"
+                          />
+                        </div>
+                      ) : (
+                        rv.quotation_price != null && (
+                          <span className="text-sm text-gray-500">{fmt(rv.quotation_price)}</span>
+                        )
                       )}
                     </div>
-                    {rv.quotation_url && (
-                      <button
-                        onClick={() => { if (rv.quotation_url) void handleDownload(rv.quotation_url) }}
-                        className="mt-1 text-xs text-blue-600 hover:underline"
-                      >
-                        📎 ดาวน์โหลด Quotation
-                      </button>
-                    )}
+
+                    {/* Quotation file */}
+                    <div className="mt-2 flex items-center gap-3">
+                      {rv.quotation_url ? (
+                        <>
+                          <button
+                            onClick={() => { if (rv.quotation_url) void handleDownload(rv.quotation_url) }}
+                            className="text-xs text-blue-600 hover:underline"
+                          >📎 ดาวน์โหลด Quotation</button>
+                          {canEditVendors && (
+                            <button onClick={() => void handleDeleteFile(rv)}
+                              className="text-xs text-red-500 hover:underline">ลบไฟล์</button>
+                          )}
+                        </>
+                      ) : canEditVendors ? (
+                        <>
+                          <input
+                            type="file" accept=".pdf,.xlsx,.xls" className="hidden"
+                            ref={(el) => { fileRefs.current[rv.id] = el }}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]
+                              if (f) void handleUpload(rv.id, f)
+                            }}
+                          />
+                          <button
+                            onClick={() => { fileRefs.current[rv.id]?.click() }}
+                            className="rounded border border-dashed border-gray-300 px-2 py-1 text-xs text-gray-500 hover:border-blue-400 hover:text-blue-600"
+                          >+ แนบ Quotation</button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-300">ไม่มีไฟล์แนบ</span>
+                      )}
+                    </div>
                   </li>
                 )
               })}
