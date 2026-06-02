@@ -7,6 +7,7 @@ import { useScoringStore } from '@/stores/scoringStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { Approval } from '@/stores/approvalStore'
 import type { RequestVendor } from '@/features/requests/types'
+import CompareDashboard from './CompareDashboard'
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(n)
@@ -192,6 +193,21 @@ export default function ApprovalDetailPage() {
             ))}
           </ul>
         </div>
+
+        {/* Compare Dashboard — เทียบ vendor ประกอบการพิจารณา */}
+        {isUnlocked && finalScores.length > 0 && (
+          <div className="lg:col-span-2">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+              📊 เปรียบเทียบ Vendor
+            </h2>
+            <CompareDashboard
+              requestId={approval.request_id}
+              finalScores={finalScores}
+              requestVendors={requestVendors}
+              vendorName={(vid) => vendors.find((v) => v.id === vid)?.name ?? vid}
+            />
+          </div>
+        )}
 
         {/* Approve comment */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 lg:col-span-2">

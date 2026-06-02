@@ -151,6 +151,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: { vendor_id: string; final_score: number; scorer_count: number }[]
       }
+      get_criteria_avg_scores: {
+        Args: { p_request_id: string }
+        Returns: { vendor_id: string; criteria_id: string; avg_score: number }[]
+      }
       is_scoring_unlocked: {
         Args: { p_request_id: string }
         Returns: boolean
