@@ -26,13 +26,12 @@ function groupByCategory(categories: ScoringCategory[], criteria: ScoringCriteri
   return groups.filter((g) => g.items.length > 0)
 }
 
-// heatmap background ตามคะแนน
-function cellBg(score: number, scored: boolean): string {
-  if (!scored) return 'bg-white'
-  if (score >= 80) return 'bg-green-100'
-  if (score >= 65) return 'bg-lime-100'
-  if (score >= 50) return 'bg-amber-100'
-  return 'bg-orange-100'
+// สีแถบเติมตามคะแนน (heatmap)
+function barColor(score: number): string {
+  if (score >= 80) return 'bg-green-400'
+  if (score >= 65) return 'bg-lime-400'
+  if (score >= 50) return 'bg-amber-400'
+  return 'bg-orange-400'
 }
 
 export default function ScoringMatrix({ scorerId, requestId, categories, criteria, vendors, submitted, onSubmit }: Props) {
@@ -119,7 +118,7 @@ export default function ScoringMatrix({ scorerId, requestId, categories, criteri
               </th>
               {vendors.map((v) => (
                 <th key={v.vendor_id}
-                  className="sticky top-0 z-10 min-w-[120px] border-b border-gray-200 bg-gray-50 px-3 py-3 text-center font-semibold text-gray-800">
+                  className="sticky top-0 z-10 min-w-[150px] border-b border-gray-200 bg-gray-50 px-3 py-3 text-center font-semibold text-gray-800">
                   <div className="flex items-center justify-center gap-1">
                     {v.vendor_id === leaderVid && allComplete && <span>🏆</span>}
                     <span className="truncate">{v.vendor_name}</span>
@@ -231,15 +230,29 @@ function CategoryRows({ group, vendors, getScore, isScored, getCategoryWeighted,
             const score = getScore(v.vendor_id, c.id)
             return (
               <td key={v.vendor_id}
-                className={`p-0 text-center ${cellBg(score, scored)} ${!scored && !submitted ? 'ring-1 ring-inset ring-amber-300' : ''}`}>
-                <input
-                  type="number" min="0" max="100"
-                  value={scored ? score : ''}
-                  disabled={submitted}
-                  placeholder="–"
-                  onChange={(e) => { setScore(v.vendor_id, c.id, parseInt(e.target.value) || 0) }}
-                  className="w-full bg-transparent py-2.5 text-center text-sm font-bold text-gray-800 outline-none placeholder:font-normal placeholder:text-gray-300 focus:bg-white/70 disabled:cursor-not-allowed"
-                />
+                className={`px-2 py-1.5 ${!scored && !submitted ? 'bg-amber-50/40' : ''}`}>
+                <div className={`group relative h-7 overflow-hidden rounded-md border ${
+                  scored ? 'border-gray-200' : 'border-dashed border-amber-300'
+                } bg-gray-100`}>
+                  {/* แถบเติมตามคะแนน */}
+                  {scored && (
+                    <div className={`absolute inset-y-0 left-0 ${barColor(score)} transition-all`}
+                      style={{ width: `${String(score)}%` }} />
+                  )}
+                  {/* ตัวเลขทับตรงกลาง */}
+                  <span className="pointer-events-none absolute inset-0 grid place-items-center text-sm font-bold text-gray-800">
+                    {scored ? score : <span className="font-normal text-gray-300">–</span>}
+                  </span>
+                  {/* range overlay สำหรับลาก/คลิกปรับ */}
+                  {!submitted && (
+                    <input
+                      type="range" min="0" max="100" value={score}
+                      aria-label={`คะแนน ${c.name}`}
+                      onChange={(e) => { setScore(v.vendor_id, c.id, parseInt(e.target.value)) }}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+                  )}
+                </div>
               </td>
             )
           })}
