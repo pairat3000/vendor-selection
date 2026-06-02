@@ -15,8 +15,8 @@ type Tab = 'score' | 'scorers' | 'results'
 
 export default function ScoringPage() {
   const { id: requestId } = useParams<{ id: string }>()
-  const { criteria, scorers, isUnlocked, finalScores, loading,
-    fetchCriteria, fetchScorers, fetchMyScores, checkUnlocked, fetchFinalScores,
+  const { categories, criteria, scorers, isUnlocked, finalScores, loading,
+    fetchCategories, fetchCriteria, fetchScorers, fetchMyScores, checkUnlocked, fetchFinalScores,
     submitScores } = useScoringStore()
   const { requests, fetchRequests, fetchRequestVendors } = useRequestStore()
   const { vendors, fetchVendors } = useVendorStore()
@@ -35,6 +35,7 @@ export default function ScoringPage() {
     if (!requestId) return
     if (requests.length === 0) void fetchRequests()
     void fetchVendors()
+    void fetchCategories(requestId)
     void fetchCriteria(requestId)
     void fetchScorers(requestId)
     void checkUnlocked(requestId)
@@ -115,12 +116,13 @@ export default function ScoringPage() {
       {tab === 'score' && (
         <div className="space-y-6">
           {(isOwner || isAdmin) && (
-            <CriteriaEditor requestId={requestId} criteria={criteria} />
+            <CriteriaEditor requestId={requestId} categories={categories} criteria={criteria} />
           )}
           {myScorer ? (
             <ScoringMatrix
               scorerId={myScorer.id}
               requestId={requestId}
+              categories={categories}
               criteria={criteria}
               vendors={requestVendors}
               submitted={!!myScorer.submitted_at}

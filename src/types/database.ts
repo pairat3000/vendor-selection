@@ -84,10 +84,16 @@ export type Database = {
         Update: { quotation_url?: string | null; quotation_price?: number | null; payment_terms?: string | null }
         Relationships: []
       }
+      scoring_categories: {
+        Row: { id: string; request_id: string; name: string; sort_order: number; created_at: string }
+        Insert: { id?: string; request_id: string; name: string; sort_order?: number }
+        Update: { name?: string; sort_order?: number }
+        Relationships: []
+      }
       scoring_criteria: {
-        Row: { id: string; request_id: string; name: string; weight: number; sort_order: number; created_at: string }
-        Insert: { id?: string; request_id: string; name: string; weight: number; sort_order?: number }
-        Update: { name?: string; weight?: number; sort_order?: number }
+        Row: { id: string; request_id: string; category_id: string | null; name: string; description: string | null; weight: number; sort_order: number; created_at: string }
+        Insert: { id?: string; request_id: string; category_id?: string | null; name: string; description?: string | null; weight: number; sort_order?: number }
+        Update: { category_id?: string | null; name?: string; description?: string | null; weight?: number; sort_order?: number }
         Relationships: []
       }
       scorers: {

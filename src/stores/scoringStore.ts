@@ -3,20 +3,29 @@ import { supabase } from '@/lib/supabase'
 import { weightedScore, finalScore } from '@/lib/scoring'
 import type { Database } from '@/types/database'
 import type {
-  ScoringCriteria, Score, ScorerWithProfile, FinalScore,
+  ScoringCategory, ScoringCriteria, Score, ScorerWithProfile, FinalScore,
 } from '@/features/scoring/types'
 
+type CategoryInsert = Database['public']['Tables']['scoring_categories']['Insert']
+type CategoryUpdate = Database['public']['Tables']['scoring_categories']['Update']
 type CriteriaInsert = Database['public']['Tables']['scoring_criteria']['Insert']
 type CriteriaUpdate = Database['public']['Tables']['scoring_criteria']['Update']
 type ScorerChangeLogInsert = Database['public']['Tables']['scorer_change_log']['Insert']
 
 interface ScoringState {
+  categories: ScoringCategory[]
   criteria: ScoringCriteria[]
   scorers: ScorerWithProfile[]
   myScores: Record<string, Record<string, number>> // vendor_id → criteria_id → score
   isUnlocked: boolean
   finalScores: FinalScore[]
   loading: boolean
+
+  // categories
+  fetchCategories: (requestId: string) => Promise<void>
+  addCategory: (data: CategoryInsert) => Promise<{ error: string | null; id?: string }>
+  updateCategory: (id: string, data: CategoryUpdate) => Promise<void>
+  deleteCategory: (id: string) => Promise<void>
 
   // criteria
   fetchCriteria: (requestId: string) => Promise<void>
@@ -44,12 +53,52 @@ interface ScoringState {
 }
 
 export const useScoringStore = create<ScoringState>((set, get) => ({
+  categories: [],
   criteria: [],
   scorers: [],
   myScores: {},
   isUnlocked: false,
   finalScores: [],
   loading: false,
+
+  // ─── CATEGORIES ─────────────────────────────────────────
+  fetchCategories: async (requestId) => {
+    const { data } = await supabase
+      .from('scoring_categories')
+      .select('*')
+      .eq('request_id', requestId)
+      .order('sort_order')
+    set({ categories: data ?? [] })
+  },
+
+  addCategory: async (data) => {
+    const maxOrder = get().categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
+    const res = await supabase
+      .from('scoring_categories')
+      .insert({ ...data, sort_order: maxOrder + 1 })
+      .select()
+      .single()
+    if (res.error) return { error: res.error.message }
+    set((s) => ({ categories: [...s.categories, res.data] }))
+    return { error: null, id: res.data.id }
+  },
+
+  updateCategory: async (id, data) => {
+    const res = await supabase.from('scoring_categories').update(data).eq('id', id).select().single()
+    if (!res.error) {
+      set((s) => ({ categories: s.categories.map((c) => c.id === id ? res.data : c) }))
+    }
+  },
+
+  deleteCategory: async (id) => {
+    // ลบหมวด → criteria.category_id ถูก set null (ON DELETE SET NULL) แต่เราลบ criteria ในหมวดด้วยเพื่อความชัดเจน
+    await supabase.from('scoring_criteria').delete().eq('category_id', id)
+    await supabase.from('scoring_categories').delete().eq('id', id)
+    set((s) => ({
+      categories: s.categories.filter((c) => c.id !== id),
+      criteria: s.criteria.filter((c) => c.category_id !== id),
+    }))
+  },
 
   // ─── CRITERIA ───────────────────────────────────────────
   fetchCriteria: async (requestId) => {
