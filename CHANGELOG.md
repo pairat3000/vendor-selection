@@ -1,6 +1,34 @@
 # Changelog
 
-All notable changes to Vendor Selection v1.0.0 are documented here.
+All notable changes to Vendor Selection are documented here.
+
+---
+
+## [1.1.0] — 2026-06-02
+
+ปรับปรุงและเพิ่มฟีเจอร์หลัง v1.0.0 จากการใช้งานจริง (UAT)
+
+### เพิ่มใหม่
+- **User Management** (`/admin/users`): admin สร้าง/แก้ role/รีเซ็ตรหัส/เปิด-ปิด/ลบผู้ใช้ได้ในแอป ผ่าน Edge Function `admin-users` (service_role, ตรวจสิทธิ์ admin) — ไม่ต้องเข้า Supabase dashboard
+- **คำอธิบายสิทธิ์แต่ละ role** ในฟอร์มเพิ่มผู้ใช้
+- **หมวดหมู่หลักของเกณฑ์ให้คะแนน** (2 ระดับ): `scoring_categories` + `scoring_criteria.category_id`/`description` — สูตรคำนวณไม่เปลี่ยน
+- **เลือก scorer จาก dropdown** รายชื่อผู้ใช้ แทนการพิมพ์ UUID
+- **Compare Dashboard** ในหน้าอนุมัติ: ตารางเทียบ vendor (คะแนนรวม/ราคา/ความคุ้มค่า/คะแนนรายหมวด) ไฮไลต์ตัวที่ดีที่สุด — `get_criteria_avg_scores()` + RLS ให้ approver อ่านได้
+- **แก้ราคา/quotation จากหน้า request detail** (owner/admin) — ไม่ต้องผ่าน wizard
+
+### ปรับปรุง
+- **UI กรอกคะแนนใหม่**: vendor selector pills, ช่องพิมพ์ตัวเลข + ปุ่ม ±, คะแนนถ่วงน้ำหนักต่อหมวด, สีบอกระดับ
+- **Status ความครบของการให้คะแนน**: progress bar + บล็อก submit จนกว่าจะกรอกครบทุก vendor × ทุกหัวข้อ (แยก "ยังไม่กรอก" จาก "ให้ 0")
+- **Approval Rules แบบ assign user**: เลือกผู้อนุมัติเฉพาะคนต่อ level (เดิมเป็น role)
+- **Approval Overview** (`/admin/approvals`): ภาพรวมการอนุมัติทุก request ทุก level
+- เก็บ Supabase migrations ทั้งหมดลง repo (`supabase/migrations/`)
+- CI: bump `actions/checkout`/`setup-node` → v5
+
+### แก้บั๊ก
+- **Deactivate ผู้ใช้ใช้งานได้จริง**: ban auth user (login ไม่ได้) + เด้ง session ที่ค้าง
+- **Resubmit หลังส่งกลับ**: `create_approval_records` ลบ approval ทุกแถวก่อนสร้างรอบใหม่ (เดิมลบแค่ pending → approve ไม่ผ่าน)
+- **`process_approval` ตรวจสิทธิ์**: เฉพาะผู้ถูก assign หรือ admin เท่านั้น
+- RLS infinite recursion (SECURITY DEFINER helpers), `scores.vendor_id` FK, scorer submit policy, ภาษาไทยใน PDF export (html2canvas + Sarabun), GitHub Pages SPA 404
 
 ---
 
