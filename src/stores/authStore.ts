@@ -7,6 +7,7 @@ interface Profile {
   id: string
   full_name: string
   role: UserRole
+  is_active: boolean
 }
 
 interface AuthState {
@@ -32,6 +33,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
         const profile = await fetchProfile(session.user.id)
+        // ถ้าถูกปิดใช้งานระหว่างที่ session ยังไม่หมดอายุ → เด้งออก
+        if (profile && !profile.is_active) {
+          await supabase.auth.signOut()
+          set({ session: null, user: null, profile: null, loading: false })
+          return
+        }
         set({ session, user: session.user, profile, loading: false })
       } else {
         set({ loading: false })
@@ -45,6 +52,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         void fetchProfile(session.user.id).then((profile) => {
+          if (profile && !profile.is_active) {
+            void supabase.auth.signOut()
+            set({ session: null, user: null, profile: null })
+            return
+          }
           set({ session, user: session.user, profile })
         })
       } else {
@@ -55,7 +67,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signIn: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return { error: error.message }
+    if (error) {
+      // ผู้ใช้ถูกปิดใช้งาน (banned) → ข้อความภาษาไทยที่ชัดเจน
+      const msg = error.message.toLowerCase()
+      if (msg.includes('banned') || msg.includes('blocked')) {
+        return { error: 'บัญชีนี้ถูกปิดการใช้งาน — กรุณาติดต่อผู้ดูแลระบบ' }
+      }
+      if (msg.includes('invalid login credentials')) {
+        return { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }
+      }
+      return { error: error.message }
+    }
     return { error: null }
   },
 
@@ -68,7 +90,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, role')
+    .select('id, full_name, role, is_active')
     .eq('id', userId)
     .single()
   if (error ?? !data) return null

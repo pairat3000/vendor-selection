@@ -20,7 +20,8 @@ interface CreatePayload {
 }
 interface DeletePayload { action: 'delete'; user_id: string }
 interface ResetPayload { action: 'reset_password'; user_id: string; password: string }
-type Payload = CreatePayload | DeletePayload | ResetPayload
+interface SetActivePayload { action: 'set_active'; user_id: string; is_active: boolean }
+type Payload = CreatePayload | DeletePayload | ResetPayload | SetActivePayload
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -88,6 +89,21 @@ Deno.serve(async (req: Request) => {
         password: payload.password,
       })
       if (error) return json({ error: error.message }, 400)
+      return json({ ok: true })
+    }
+
+    if (payload.action === 'set_active') {
+      if (payload.user_id === user.id) return json({ error: 'เปลี่ยนสถานะตัวเองไม่ได้' }, 400)
+      // ban = ปิดใช้งานจริง (ออก token ไม่ได้); none = เปิดใช้งาน
+      const ban_duration = payload.is_active ? 'none' : '876000h'
+      const { error: banErr } = await admin.auth.admin.updateUserById(payload.user_id, { ban_duration })
+      if (banErr) return json({ error: banErr.message }, 400)
+      // sync flag ใน profiles
+      const { error: profErr } = await admin
+        .from('profiles')
+        .update({ is_active: payload.is_active })
+        .eq('id', payload.user_id)
+      if (profErr) return json({ error: profErr.message }, 400)
       return json({ ok: true })
     }
 

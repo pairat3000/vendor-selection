@@ -79,8 +79,9 @@ export const useUserStore = create<UserState>((set) => ({
   },
 
   toggleActive: async (id, isActive) => {
-    const { error } = await supabase.from('profiles').update({ is_active: isActive }).eq('id', id)
-    if (error) return { error: error.message }
+    // เรียก edge function: ban/unban auth user + sync is_active (ปิดใช้งานจริง login ไม่ได้)
+    const result = await callAdminFn({ action: 'set_active', user_id: id, is_active: isActive })
+    if (result.error) return result
     set((s) => ({ users: s.users.map((u) => (u.id === id ? { ...u, is_active: isActive } : u)) }))
     return { error: null }
   },
