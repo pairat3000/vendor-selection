@@ -46,8 +46,19 @@ export default function ScoringMatrix({ scorerId, requestId, categories, criteri
   const getScore = (vendorId: string, criteriaId: string): number =>
     (myScores[vendorId] ?? {})[criteriaId] ?? 0
 
+  // ช่องนี้ถูกกรอก (บันทึกแล้ว) หรือยัง — แยก "ยังไม่กรอก" ออกจาก "ให้ 0 คะแนน"
+  const isScored = (vendorId: string, criteriaId: string): boolean =>
+    criteriaId in (myScores[vendorId] ?? {})
+
   const getWeightedScore = (vendorId: string) =>
     weightedScore(criteria.map((c) => ({ score: getScore(vendorId, c.id), weight: c.weight })))
+
+  // ความครบถ้วนการกรอก
+  const vendorScoredCount = (vendorId: string) => criteria.filter((c) => isScored(vendorId, c.id)).length
+  const vendorComplete = (vendorId: string) => vendorScoredCount(vendorId) === criteria.length
+  const totalCells = vendors.length * criteria.length
+  const scoredCells = vendors.reduce((sum, v) => sum + vendorScoredCount(v.vendor_id), 0)
+  const allComplete = scoredCells === totalCells
 
   // คะแนนถ่วงน้ำหนักของเฉพาะหมวด (เต็มของหมวด = ผลรวม weight ของหัวข้อในหมวด)
   const getCategoryScore = (vendorId: string, items: ScoringCriteria[]) =>
@@ -86,11 +97,31 @@ export default function ScoringMatrix({ scorerId, requestId, categories, criteri
         </div>
       )}
 
+      {/* Progress summary */}
+      {!submitted && (
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+          <div className="mb-1.5 flex items-center justify-between text-sm">
+            <span className="font-medium text-gray-700">ความคืบหน้าการให้คะแนน</span>
+            <span className={`font-semibold ${allComplete ? 'text-green-600' : 'text-amber-600'}`}>
+              {scoredCells}/{totalCells} ช่อง {allComplete ? '· ครบแล้ว ✓' : ''}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={`h-full rounded-full transition-all ${allComplete ? 'bg-green-500' : 'bg-amber-400'}`}
+              style={{ width: `${String(totalCells > 0 ? (scoredCells / totalCells) * 100 : 0)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Vendor selector — เลือกทีละราย */}
       <div className="flex flex-wrap gap-2">
         {vendors.map((v) => {
           const ws = getWeightedScore(v.vendor_id)
           const active = v.vendor_id === activeVendorId
+          const done = vendorComplete(v.vendor_id)
+          const cnt = vendorScoredCount(v.vendor_id)
           return (
             <button
               key={v.vendor_id}
@@ -101,10 +132,12 @@ export default function ScoringMatrix({ scorerId, requestId, categories, criteri
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
               }`}
             >
+              {/* สถานะความครบ */}
+              <span className={done ? 'text-green-500' : 'text-amber-400'}>{done ? '✓' : '○'}</span>
               <span className="font-medium">{v.vendor_name}</span>
-              <span className={`text-xs font-bold ${active ? 'text-blue-600' : 'text-gray-400'}`}>
-                {ws.toFixed(1)}
-              </span>
+              {submitted || done
+                ? <span className={`text-xs font-bold ${active ? 'text-blue-600' : 'text-gray-400'}`}>{ws.toFixed(1)}</span>
+                : <span className="text-xs text-amber-500">{cnt}/{criteria.length}</span>}
             </button>
           )
         })}
@@ -138,12 +171,20 @@ export default function ScoringMatrix({ scorerId, requestId, categories, criteri
               <div className="space-y-4">
                 {g.items.map((c) => {
                   const score = getScore(activeVendor.vendor_id, c.id)
+                  const scored = isScored(activeVendor.vendor_id, c.id)
                   return (
-                    <div key={c.id} className="grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-2">
+                    <div key={c.id} className={`grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-2 rounded-lg ${
+                      !scored && !submitted ? 'bg-amber-50/60 px-3 py-2 ring-1 ring-amber-200' : ''
+                    }`}>
                       {/* Label */}
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-800">
                           {c.name} <span className="font-normal text-gray-400">({c.weight}%)</span>
+                          {!scored && !submitted && (
+                            <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">
+                              ยังไม่กรอก
+                            </span>
+                          )}
                         </p>
                         {c.description && <p className="text-xs text-gray-400">{c.description}</p>}
                       </div>
@@ -184,16 +225,21 @@ export default function ScoringMatrix({ scorerId, requestId, categories, criteri
         </div>
       </div>
 
-      {/* Sticky-ish submit bar */}
+      {/* Submit bar — บล็อกจนกว่าจะกรอกครบ + น้ำหนัก 100% */}
       {!submitted && (
         <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-3">
           <p className="text-sm text-gray-500">
-            {weightOk ? 'กรอกคะแนนครบทุก vendor แล้วกด Submit' : `⚠️ น้ำหนักรวม ${totalWeight.toFixed(1)}% (ต้อง 100%)`}
+            {!weightOk
+              ? `⚠️ น้ำหนักรวม ${totalWeight.toFixed(1)}% (ต้อง 100%)`
+              : !allComplete
+                ? `⚠️ ยังกรอกไม่ครบ — เหลืออีก ${String(totalCells - scoredCells)} ช่อง`
+                : '✓ กรอกครบแล้ว พร้อมส่ง'}
           </p>
           <button
             onClick={onSubmit}
-            disabled={!weightOk}
-            className="rounded-lg bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+            disabled={!weightOk || !allComplete}
+            title={!allComplete ? 'ต้องกรอกคะแนนครบทุก vendor ทุกหัวข้อก่อน' : ''}
+            className="rounded-lg bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             ✓ ส่งคะแนน (Submit)
           </button>
