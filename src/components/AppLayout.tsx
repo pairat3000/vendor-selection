@@ -20,6 +20,7 @@ const APPROVER_NAV_ITEMS: NavItem[] = [
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { to: '/approvals', label: 'รออนุมัติ', icon: '✅' },
   { to: '/admin/approvals', label: 'Approval Overview', icon: '📊' },
+  { to: '/admin/users', label: 'ผู้ใช้งานระบบ', icon: '👥' },
   { to: '/admin/fields', label: 'Custom Fields', icon: '🔧' },
   { to: '/admin/approval-rules', label: 'Approval Rules', icon: '⚙️' },
 ]

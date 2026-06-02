@@ -9,9 +9,9 @@ export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: { id: string; full_name: string; role: UserRole; created_at: string }
-        Insert: { id: string; full_name?: string; role?: UserRole }
-        Update: { full_name?: string; role?: UserRole }
+        Row: { id: string; full_name: string; email: string | null; role: UserRole; is_active: boolean; created_at: string }
+        Insert: { id: string; full_name?: string; email?: string | null; role?: UserRole; is_active?: boolean }
+        Update: { full_name?: string; email?: string | null; role?: UserRole; is_active?: boolean }
         Relationships: []
       }
       vendors: {
