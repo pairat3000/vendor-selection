@@ -110,15 +110,15 @@ export default function ScoringMatrix({ scorerId, requestId, categories, criteri
 
       {/* Matrix */}
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full table-fixed border-collapse text-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 top-0 z-20 min-w-[240px] border-b border-r border-gray-200 bg-gray-50 px-4 py-3 text-left font-semibold text-gray-600">
+              <th className="sticky left-0 top-0 z-20 w-[260px] border-b border-r border-gray-200 bg-gray-50 px-4 py-3 text-left font-semibold text-gray-600">
                 เกณฑ์ \ Vendor
               </th>
               {vendors.map((v) => (
                 <th key={v.vendor_id}
-                  className="sticky top-0 z-10 min-w-[150px] border-b border-gray-200 bg-gray-50 px-3 py-3 text-center font-semibold text-gray-800">
+                  className="sticky top-0 z-10 w-[150px] border-b border-gray-200 bg-gray-50 px-3 py-3 text-center font-semibold text-gray-800">
                   <div className="flex items-center justify-center gap-1">
                     {v.vendor_id === leaderVid && allComplete && <span>🏆</span>}
                     <span className="truncate">{v.vendor_name}</span>
