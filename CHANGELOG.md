@@ -4,6 +4,14 @@ All notable changes to Vendor Selection are documented here.
 
 ---
 
+## [1.2.1] — 2026-06-03
+
+### เพิ่ม / ปรับ
+- เพิ่ม **logo ระบบ** (SVG): favicon, sidebar, หน้า login
+- หลัง login ทุก role เข้าหน้า **Dashboard** เป็นหน้าแรก (เดิม admin ไป Approval Rules)
+
+---
+
 ## [1.2.0] — 2026-06-03
 
 ยกเครื่อง UX การให้คะแนน + ภาพสรุปการตัดสินใจ + จัดการเอกสาร/โปรเจกต์
