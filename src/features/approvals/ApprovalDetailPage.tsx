@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { Approval } from '@/stores/approvalStore'
 import type { RequestVendor } from '@/features/requests/types'
 import CompareDashboard from './CompareDashboard'
+import VendorDocuments from '@/features/requests/VendorDocuments'
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(n)
@@ -158,9 +159,12 @@ export default function ApprovalDetailPage() {
           </h2>
           <ul className="space-y-2">
             {requestVendors.map((rv) => (
-              <li key={rv.id} className="flex items-center justify-between text-sm">
-                <span className="text-gray-700">{vendors.find((v) => v.id === rv.vendor_id)?.name ?? rv.vendor_id}</span>
-                {rv.quotation_price != null && <span className="text-gray-500">{fmt(rv.quotation_price)}</span>}
+              <li key={rv.id} className="border-b border-gray-50 pb-2 last:border-0">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-700">{vendors.find((v) => v.id === rv.vendor_id)?.name ?? rv.vendor_id}</span>
+                  {rv.quotation_price != null && <span className="text-gray-500">{fmt(rv.quotation_price)}</span>}
+                </div>
+                <VendorDocuments requestVendorId={rv.id} canEdit={false} />
               </li>
             ))}
           </ul>

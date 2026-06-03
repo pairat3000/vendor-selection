@@ -42,6 +42,9 @@ export default function VendorDocuments({ requestVendorId, canEdit }: Props) {
     setDocs((p) => p.filter((d) => d.id !== id))
   }
 
+  // read-only และไม่มีเอกสาร → ไม่ต้องแสดงอะไร
+  if (!canEdit && docs.length === 0) return null
+
   return (
     <div className="mt-3 border-t border-gray-100 pt-2">
       <p className="mb-1 text-xs font-medium text-gray-500">เอกสารการนำเสนอ ({docs.length})</p>

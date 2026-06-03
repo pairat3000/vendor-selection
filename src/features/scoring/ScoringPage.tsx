@@ -10,6 +10,7 @@ import ScorerManager from './ScorerManager'
 import ResultsPanel from './ResultsPanel'
 import ExportButton from './ExportButton'
 import ExecutiveSummary from './ExecutiveSummary'
+import VendorDocuments from '@/features/requests/VendorDocuments'
 import type { RequestVendor } from '@/features/requests/types'
 
 type Tab = 'score' | 'scorers' | 'results'
@@ -119,6 +120,23 @@ export default function ScoringPage() {
           {(isOwner || isAdmin) && (
             <CriteriaEditor requestId={requestId} categories={categories} criteria={criteria} />
           )}
+          {/* เอกสารประกอบการพิจารณา */}
+          {requestVendors.length > 0 && (
+            <div className="rounded-xl border border-gray-200 bg-white p-5">
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                📎 เอกสารประกอบการพิจารณา
+              </h2>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {requestVendors.map((rv) => (
+                  <div key={rv.id} className="rounded-lg border border-gray-100 p-3">
+                    <p className="mb-1 text-sm font-medium text-gray-800">{rv.vendor_name}</p>
+                    <VendorDocuments requestVendorId={rv.id} canEdit={false} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {myScorer ? (
             <ScoringMatrix
               scorerId={myScorer.id}
