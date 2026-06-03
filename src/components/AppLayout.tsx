@@ -46,7 +46,8 @@ export default function AppLayout() {
       {/* Sidebar */}
       <aside className="flex w-60 flex-col border-r border-gray-200 bg-white">
         {/* Logo */}
-        <div className="flex h-16 items-center border-b border-gray-200 px-6">
+        <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-5">
+          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="" className="h-8 w-8 shrink-0" />
           <span className="text-lg font-bold text-blue-600">Vendor Selection</span>
         </div>
 

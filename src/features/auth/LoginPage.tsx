@@ -41,6 +41,8 @@ export default function LoginPage() {
         {/* Card */}
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
           <div className="mb-8 text-center">
+            <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Vendor Selection"
+              className="mx-auto mb-3 h-16 w-16" />
             <h1 className="text-2xl font-bold text-gray-900">Vendor Selection</h1>
             <p className="mt-1 text-sm text-gray-500">DoHome IT — เข้าสู่ระบบ</p>
           </div>
