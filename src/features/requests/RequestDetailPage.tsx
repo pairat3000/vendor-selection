@@ -33,7 +33,7 @@ export default function RequestDetailPage() {
   const navigate = useNavigate()
   const { requests, fetchRequests, fetchRequestVendors, getQuotationUrl, updateRequest,
     updateRequestVendor, uploadQuotation, deleteQuotation,
-    addRequestVendor, removeRequestVendor } = useRequestStore()
+    addRequestVendor, removeRequestVendor, deleteRequest } = useRequestStore()
   const { vendors, fetchVendors } = useVendorStore()
   const { submitForApproval } = useApprovalStore()
   const { user, profile } = useAuthStore()
@@ -89,6 +89,13 @@ export default function RequestDetailPage() {
     await submitForApproval(id)
     await fetchRequests()
     setSubmitting(false)
+  }
+
+  const handleDeleteRequest = async () => {
+    if (!id || !request) return
+    if (!confirm(`ลบโปรเจกต์ "${request.title}" ออกจากการแสดงผล?\n(ข้อมูลจะถูกซ่อน ไม่ถูกลบจริง)`)) return
+    await deleteRequest(id)
+    navigate('/requests')
   }
 
   const handleStartScoring = async () => {
@@ -195,6 +202,14 @@ export default function RequestDetailPage() {
             <button onClick={() => void handleSubmitApproval()} disabled={submitting}
               className="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-semibold text-white hover:bg-yellow-600 disabled:opacity-50">
               {submitting ? '...' : '🚀 ส่งอนุมัติอีกครั้ง'}
+            </button>
+          )}
+
+          {/* ลบโปรเจกต์ (owner/admin) — soft-delete */}
+          {(request.owner_id === user?.id || profile?.role === 'admin') && (
+            <button onClick={() => void handleDeleteRequest()}
+              className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+              🗑️ ลบโปรเจกต์
             </button>
           )}
         </div>

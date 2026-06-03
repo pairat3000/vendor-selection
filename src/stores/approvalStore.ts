@@ -114,14 +114,18 @@ export const useApprovalStore = create<ApprovalState>((set) => ({
     const { data: requestsData } = await supabase
       .from('selection_requests')
       .select('id, title, budget')
+      .eq('is_active', true) // ซ่อน project ที่ถูกลบ
       .in('id', requestIds)
     const reqMap = Object.fromEntries((requestsData ?? []).map((r) => [r.id, r]))
 
-    const mapped: ApprovalWithRequest[] = approvalsData.map((a) => ({
-      ...a,
-      request_title: (reqMap[a.request_id] as { title: string; budget: number } | undefined)?.title,
-      request_budget: (reqMap[a.request_id] as { title: string; budget: number } | undefined)?.budget,
-    }))
+    // เก็บเฉพาะ approval ที่ request ยัง active
+    const mapped: ApprovalWithRequest[] = approvalsData
+      .filter((a) => a.request_id in reqMap)
+      .map((a) => ({
+        ...a,
+        request_title: (reqMap[a.request_id] as { title: string; budget: number } | undefined)?.title,
+        request_budget: (reqMap[a.request_id] as { title: string; budget: number } | undefined)?.budget,
+      }))
     set({ myPendingApprovals: mapped, loading: false })
   },
 
@@ -139,7 +143,7 @@ export const useApprovalStore = create<ApprovalState>((set) => ({
 
     const [{ data: requestsData }, { data: profileData }] = await Promise.all([
       requestIds.length > 0
-        ? supabase.from('selection_requests').select('id, title, budget, status').in('id', requestIds)
+        ? supabase.from('selection_requests').select('id, title, budget, status').eq('is_active', true).in('id', requestIds)
         : Promise.resolve({ data: [] as { id: string; title: string; budget: number; status: string }[] }),
       approverIds.length > 0
         ? supabase.from('profiles').select('id, full_name').in('id', approverIds)
@@ -149,16 +153,17 @@ export const useApprovalStore = create<ApprovalState>((set) => ({
     const reqMap = Object.fromEntries((requestsData ?? []).map((r) => [r.id, r]))
     const nameMap = Object.fromEntries((profileData ?? []).map((p) => [p.id, p.full_name]))
 
-    // Group by request
+    // Group by request — เฉพาะ request ที่ยัง active (ไม่ถูกลบ)
     const groupMap = new Map<string, RequestApprovalGroup>()
     for (const a of approvalsData) {
       const req = reqMap[a.request_id] as { title: string; budget: number; status: string } | undefined
+      if (!req) continue // request ถูกลบ → ข้าม
       if (!groupMap.has(a.request_id)) {
         groupMap.set(a.request_id, {
           requestId: a.request_id,
-          title: req?.title ?? a.request_id,
-          budget: req?.budget ?? 0,
-          status: req?.status ?? 'unknown',
+          title: req.title,
+          budget: req.budget,
+          status: req.status,
           approvals: [],
         })
       }

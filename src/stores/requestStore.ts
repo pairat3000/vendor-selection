@@ -13,6 +13,7 @@ interface RequestState {
   fetchRequests: () => Promise<void>
   createRequest: (data: SelectionRequestInsert) => Promise<{ error: string | null; id?: string }>
   updateRequest: (id: string, data: SelectionRequestUpdate) => Promise<{ error: string | null }>
+  deleteRequest: (id: string) => Promise<{ error: string | null }>
   // request vendors
   fetchRequestVendors: (requestId: string) => Promise<RequestVendor[]>
   addRequestVendor: (data: RequestVendorInsert) => Promise<{ error: string | null; id?: string }>
@@ -49,6 +50,14 @@ export const useRequestStore = create<RequestState>((set) => ({
     const res = await supabase.from('selection_requests').update(data).eq('id', id).select().single()
     if (res.error) return { error: res.error.message }
     set((s) => ({ requests: s.requests.map((r) => (r.id === id ? res.data : r)) }))
+    return { error: null }
+  },
+
+  // soft-delete: ซ่อน project ออกจากทุกหน้า (is_active=false) โดยไม่ลบข้อมูลจริง
+  deleteRequest: async (id) => {
+    const { error } = await supabase.from('selection_requests').update({ is_active: false }).eq('id', id)
+    if (error) return { error: error.message }
+    set((s) => ({ requests: s.requests.filter((r) => r.id !== id) }))
     return { error: null }
   },
 
