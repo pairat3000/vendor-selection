@@ -10,14 +10,10 @@ export default function LoginPage() {
   const { signIn, profile, user } = useAuthStore()
   const navigate = useNavigate()
 
-  // Redirect after profile loads post-login
+  // Redirect after profile loads post-login — ทุก role ไปหน้า Dashboard
   useEffect(() => {
     if (user && profile) {
-      if (profile.role === 'admin') {
-        navigate('/admin/approval-rules', { replace: true })
-      } else {
-        navigate('/dashboard', { replace: true })
-      }
+      navigate('/dashboard', { replace: true })
     }
   }, [user, profile, navigate])
 
