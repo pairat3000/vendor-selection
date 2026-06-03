@@ -4,6 +4,26 @@ All notable changes to Vendor Selection are documented here.
 
 ---
 
+## [1.2.0] — 2026-06-03
+
+ยกเครื่อง UX การให้คะแนน + ภาพสรุปการตัดสินใจ + จัดการเอกสาร/โปรเจกต์
+
+### เพิ่มใหม่
+- **Scoring UI ใหม่ — Matrix Heatmap**: ตารางเดียวเห็นทุก vendor × ทุกหัวข้อ, ช่องคะแนนเป็นแถบเติมสี (fill bar) คลิก/ลากปรับได้, จัดกลุ่มตามหมวด, แถวรวมถ่วงน้ำหนัก + ไฮไลต์ผู้นำ, header/คอลัมน์แรก sticky
+- **Executive Summary** (แท็บผลรวม): กล่องแนะนำ vendor + margin, KPI cards, กราฟเทียบคะแนน, ตารางผู้นำรายหมวด, ราคา/ความคุ้มค่า — สำหรับนำเสนอ EXCOM
+- **Compare Dashboard** (หน้าอนุมัติ): ตารางเทียบ vendor (คะแนน/ราคา/ความคุ้มค่า/รายหมวด) ไฮไลต์ตัวที่ดีที่สุด
+- **เอกสารการนำเสนอ per-project**: แนบหลายชิ้นต่อ vendor ต่อ request เป็นลิงก์ + หัวข้อ (admin กำหนด list หัวข้อได้ที่ /admin/document-types); แสดงให้ scorer/approver เปิดดูในหน้า scoring + อนุมัติ
+- **จัดการ vendor จากหน้า request detail**: เพิ่ม/ลบ vendor, แก้ราคา quotation, แนบไฟล์ — ไม่ต้องผ่าน wizard
+- **ลบ/กู้คืนโปรเจกต์ (soft-delete)**: ลบ project ที่ไม่ใช้ (ซ่อนทุกหน้า) + หน้า "คลังที่ลบแล้ว" (/requests/archived) พร้อมปุ่มกู้คืน
+
+### ปรับปรุง / แก้บั๊ก
+- ตาราง scoring คงที่ขณะแก้คะแนน (table-fixed) ไม่หด-ขยาย
+- status ความครบของการให้คะแนน + บล็อก submit จนกรอกครบ (จากชุด v1.1)
+- DB: scoring_categories, request_vendor_documents, document_types,
+  get_criteria_avg_scores(); RLS ให้ scorer/approver อ่านข้อมูลที่จำเป็น
+
+---
+
 ## [1.1.0] — 2026-06-02
 
 ปรับปรุงและเพิ่มฟีเจอร์หลัง v1.0.0 จากการใช้งานจริง (UAT)
