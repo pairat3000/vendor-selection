@@ -31,7 +31,8 @@ export default function RequestDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { requests, fetchRequests, fetchRequestVendors, getQuotationUrl, updateRequest,
-    updateRequestVendor, uploadQuotation, deleteQuotation } = useRequestStore()
+    updateRequestVendor, uploadQuotation, deleteQuotation,
+    addRequestVendor, removeRequestVendor } = useRequestStore()
   const { vendors, fetchVendors } = useVendorStore()
   const { submitForApproval } = useApprovalStore()
   const { user, profile } = useAuthStore()
@@ -39,6 +40,7 @@ export default function RequestDetailPage() {
   const [startingScoring, setStartingScoring] = useState(false)
   const [requestVendors, setRequestVendors] = useState<RequestVendor[]>([])
   const [fileError, setFileError] = useState<string | null>(null)
+  const [addVendorId, setAddVendorId] = useState('')
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const reloadVendors = async () => {
@@ -64,6 +66,19 @@ export default function RequestDetailPage() {
   const handleDeleteFile = async (rv: RequestVendor) => {
     if (rv.quotation_url) await deleteQuotation(rv.quotation_url)
     await updateRequestVendor(rv.id, { quotation_url: null })
+    await reloadVendors()
+  }
+
+  const handleAddVendor = async () => {
+    if (!id || !addVendorId) return
+    await addRequestVendor({ request_id: id, vendor_id: addVendorId })
+    setAddVendorId('')
+    await reloadVendors()
+  }
+
+  const handleRemoveVendor = async (rv: RequestVendor) => {
+    if (rv.quotation_url) await deleteQuotation(rv.quotation_url)
+    await removeRequestVendor(rv.id)
     await reloadVendors()
   }
 
@@ -201,8 +216,10 @@ export default function RequestDetailPage() {
             Vendors ที่เข้าร่วม ({requestVendors.length})
           </h2>
           {fileError && <p className="mb-2 text-xs text-red-600">{fileError}</p>}
-          {requestVendors.length === 0 ? (
+          {requestVendors.length === 0 && !canEditVendors ? (
             <p className="text-sm text-gray-400">ยังไม่มี vendor</p>
+          ) : requestVendors.length === 0 ? (
+            <p className="mb-3 text-sm text-gray-400">ยังไม่มี vendor — เพิ่มจากด้านล่าง</p>
           ) : (
             <ul className="space-y-3">
               {requestVendors.map((rv) => {
@@ -210,8 +227,13 @@ export default function RequestDetailPage() {
                 return (
                   <li key={rv.id} className="rounded-lg border border-gray-100 p-3">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
                         {vendor?.name ?? rv.vendor_id}
+                        {canEditVendors && (
+                          <button onClick={() => void handleRemoveVendor(rv)}
+                            title="ลบ vendor ออกจาก request"
+                            className="text-xs text-red-400 hover:text-red-600">✕</button>
+                        )}
                       </span>
                       {canEditVendors ? (
                         <div className="flex items-center gap-1">
@@ -268,6 +290,27 @@ export default function RequestDetailPage() {
               })}
             </ul>
           )}
+
+          {/* เพิ่ม vendor (owner/admin เท่านั้น) */}
+          {canEditVendors && (() => {
+            const addedIds = new Set(requestVendors.map((rv) => rv.vendor_id))
+            const available = vendors.filter((v) => v.status === 'approved' && v.is_active && !addedIds.has(v.id))
+            return (
+              <div className="mt-4 flex gap-2 border-t border-gray-100 pt-4">
+                <select value={addVendorId} onChange={(e) => { setAddVendorId(e.target.value) }}
+                  className="input flex-1 text-sm">
+                  <option value="">— เลือก Vendor ที่อนุมัติแล้ว —</option>
+                  {available.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
+                  ))}
+                </select>
+                <button onClick={() => void handleAddVendor()} disabled={!addVendorId}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+                  + เพิ่ม
+                </button>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </div>
