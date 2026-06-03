@@ -11,6 +11,7 @@ import VendorDetailPage from '@/features/vendors/VendorDetailPage'
 import VendorEditPage from '@/features/vendors/VendorEditPage'
 import RequestsPage from '@/features/requests/RequestsPage'
 import RequestNewPage from '@/features/requests/RequestNewPage'
+import ArchivedRequestsPage from '@/features/requests/ArchivedRequestsPage'
 import RequestDetailPage from '@/features/requests/RequestDetailPage'
 import RequestEditPage from '@/features/requests/RequestEditPage'
 import ScoringPage from '@/features/scoring/ScoringPage'
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/vendors/:id/edit" element={<VendorEditPage />} />
             <Route path="/requests" element={<RequestsPage />} />
             <Route path="/requests/new" element={<RequestNewPage />} />
+            <Route path="/requests/archived" element={<ArchivedRequestsPage />} />
             <Route path="/requests/:id" element={<RequestDetailPage />} />
             <Route path="/requests/:id/edit" element={<RequestEditPage />} />
             <Route path="/requests/:id/scoring" element={<ScoringPage />} />

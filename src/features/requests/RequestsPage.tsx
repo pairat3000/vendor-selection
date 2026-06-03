@@ -27,10 +27,16 @@ export default function RequestsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Selection Requests</h1>
           <p className="mt-1 text-sm text-gray-500">{requests.length} request ทั้งหมด</p>
         </div>
-        <Link to="/requests/new"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-          + สร้าง Request
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/requests/archived"
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+            🗃️ คลังที่ลบแล้ว
+          </Link>
+          <Link to="/requests/new"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+            + สร้าง Request
+          </Link>
+        </div>
       </div>
 
       {loading ? (

@@ -14,6 +14,8 @@ interface RequestState {
   createRequest: (data: SelectionRequestInsert) => Promise<{ error: string | null; id?: string }>
   updateRequest: (id: string, data: SelectionRequestUpdate) => Promise<{ error: string | null }>
   deleteRequest: (id: string) => Promise<{ error: string | null }>
+  fetchArchivedRequests: () => Promise<SelectionRequest[]>
+  restoreRequest: (id: string) => Promise<{ error: string | null }>
   // request vendors
   fetchRequestVendors: (requestId: string) => Promise<RequestVendor[]>
   addRequestVendor: (data: RequestVendorInsert) => Promise<{ error: string | null; id?: string }>
@@ -58,6 +60,22 @@ export const useRequestStore = create<RequestState>((set) => ({
     const { error } = await supabase.from('selection_requests').update({ is_active: false }).eq('id', id)
     if (error) return { error: error.message }
     set((s) => ({ requests: s.requests.filter((r) => r.id !== id) }))
+    return { error: null }
+  },
+
+  // คลังที่ลบแล้ว (is_active=false) — RLS คืนเฉพาะของ owner เอง + admin เห็นทั้งหมด
+  fetchArchivedRequests: async () => {
+    const { data } = await supabase
+      .from('selection_requests')
+      .select('*')
+      .eq('is_active', false)
+      .order('created_at', { ascending: false })
+    return data ?? []
+  },
+
+  restoreRequest: async (id) => {
+    const { error } = await supabase.from('selection_requests').update({ is_active: true }).eq('id', id)
+    if (error) return { error: error.message }
     return { error: null }
   },
 
