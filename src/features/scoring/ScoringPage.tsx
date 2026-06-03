@@ -9,6 +9,7 @@ import ScoringMatrix from './ScoringMatrix'
 import ScorerManager from './ScorerManager'
 import ResultsPanel from './ResultsPanel'
 import ExportButton from './ExportButton'
+import ExecutiveSummary from './ExecutiveSummary'
 import type { RequestVendor } from '@/features/requests/types'
 
 type Tab = 'score' | 'scorers' | 'results'
@@ -162,13 +163,26 @@ export default function ScoringPage() {
               />
             </div>
           )}
-          <ResultsPanel
-            isUnlocked={isUnlocked}
-            finalScores={finalScores}
-            scorers={scorers}
-            loading={loading}
-            vendorNames={vendorNames}
-          />
+          {isUnlocked && finalScores.length > 0 ? (
+            <ExecutiveSummary
+              requestId={requestId}
+              requestTitle={request?.title ?? requestId}
+              budget={request?.budget ?? 0}
+              categories={categories}
+              criteria={criteria}
+              finalScores={finalScores}
+              requestVendors={requestVendors}
+              scorerCount={scorers.filter((s) => s.is_active && s.submitted_at).length}
+            />
+          ) : (
+            <ResultsPanel
+              isUnlocked={isUnlocked}
+              finalScores={finalScores}
+              scorers={scorers}
+              loading={loading}
+              vendorNames={vendorNames}
+            />
+          )}
         </div>
       )}
     </div>
