@@ -7,6 +7,7 @@ import type { RequestStatus } from '@/types/database'
 import type { RequestVendor } from './types'
 import { useApprovalStore } from '@/stores/approvalStore'
 import { useAuthStore } from '@/stores/authStore'
+import VendorDocuments from './VendorDocuments'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
@@ -285,6 +286,9 @@ export default function RequestDetailPage() {
                         <span className="text-xs text-gray-300">ไม่มีไฟล์แนบ</span>
                       )}
                     </div>
+
+                    {/* เอกสารการนำเสนอ (หลายชิ้น + ลิงก์) */}
+                    <VendorDocuments requestVendorId={rv.id} canEdit={canEditVendors} />
                   </li>
                 )
               })}

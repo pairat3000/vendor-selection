@@ -20,6 +20,7 @@ import ApproverDashboardPage from '@/features/approvals/ApproverDashboardPage'
 import ApprovalDetailPage from '@/features/approvals/ApprovalDetailPage'
 import FieldManagerPage from '@/features/vendors/FieldManagerPage'
 import UsersPage from '@/features/admin/UsersPage'
+import DocumentTypesPage from '@/features/admin/DocumentTypesPage'
 
 export default function App() {
   const initialize = useAuthStore((s) => s.initialize)
@@ -54,6 +55,7 @@ export default function App() {
               <Route path="/admin/approvals" element={<ApprovalOverviewPage />} />
               <Route path="/admin/fields" element={<FieldManagerPage />} />
               <Route path="/admin/users" element={<UsersPage />} />
+              <Route path="/admin/document-types" element={<DocumentTypesPage />} />
             </Route>
             {/* Approver + Admin */}
             <Route element={<ProtectedRoute allowedRoles={['approver', 'admin']} />}>
